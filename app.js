@@ -1,24 +1,30 @@
-// GET, POST, PUT, DELETE
+require("dotenv").config();
 
-const expess = require("express");
+const express = require("express");
+const mongoose = require("mongoose");
+const postModel = require("./models/post.model");
 
-const app = expess();
+const app = express();
 
-app.use(expess.json());
+app.use(express.json());
 
-app.get("/", (req, res) => {
-  res.status(200).send("Hello Temur!");
-  // res - sorov
-  // req - javob
+app.get("/", async (req, res) => {
+  try {
+    const allPosts = await postModel.find();
+    res.status(200).json(allPosts);
+  } catch (error) {
+    res.status(500).json(error);
+  }
 });
 
-app.post("/", (req, res) => {
-  const { firstName, lastName } = req.body;
-  console.log(req.body);
-  const messege = `His full name - ${firstName} ${lastName}`;
-  res.send(messege);
-  // res - sorov
-  // req - javob
+app.post("/", async (req, res) => {
+  try {
+    const { title, body } = req.body;
+    const newPost = await postModel.create({ title, body });
+    res.status(201).json(newPost);
+  } catch (error) {
+    res.status(500).json(error);
+  }
 });
 
 app.delete("/:id", (req, res) => {
@@ -33,6 +39,25 @@ app.put("/:id", (req, res) => {
   res.json({ id, body });
 });
 
-const PORT = 8080;
+const PORT = process.env.PORT || 8080;
 
-app.listen(PORT, () => console.log(`Listening on - http://localhost:${PORT}`));
+const bootstrap = async () => {
+  try {
+    const dbUrl = process.env.DB_URL;
+    
+    if (!dbUrl) {
+      throw new Error("DB_URL .env faylida aniqlanmagan!");
+    }
+
+    await mongoose.connect(dbUrl);
+    console.log("Connected DB");
+
+    app.listen(PORT, () =>
+      console.log(`Listening on - http://localhost:${PORT}`)
+    );
+  } catch (error) {
+    console.log(`Error connecting with DB: ${error.message}`);
+  }
+};
+
+bootstrap();
